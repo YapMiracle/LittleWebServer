@@ -94,14 +94,16 @@ void *accept_request(void *from_client)
 		}
 	}
 
-	sprintf(path, "httpdocs%s", url);
+	sprintf(path, "httpdocs%s", url);//将
 
 	if (path[strlen(path) - 1] == '/')
 	{
 		strcat(path, "test.html");
 	}
 
-	if (stat(path, &st) == -1)
+	//注意st是struct stat类型
+	// https://www.cnblogs.com/matthew-2013/p/4679425.html，详细解释
+	if (stat(path, &st) == -1)// stat函数是得到文件的信息，存储在st里面，int stat(const char *file_name, struct stat *buf);
 	{
 		while ((numchars > 0) && strcmp("\n", buf))
 			numchars = get_line(client, buf, sizeof(buf));
