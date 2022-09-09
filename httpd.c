@@ -29,7 +29,7 @@ void serve_file(int, const char *);
 int startup(u_short *);
 void unimplemented(int);
 
-//  处理监听到的 HTTP 请求
+//  处理监听到的 HTTP 请求，处理http报文buf：提取请求参数以及是否含有查询参数，没有理解的是cgi动态解析和stat的作用。
 void *accept_request(void *from_client)
 {
 	int client = *(int *)from_client;
@@ -43,7 +43,7 @@ void *accept_request(void *from_client)
 	int cgi = 0;
 	char *query_string = NULL;
 
-	numchars = get_line(client, buf, sizeof(buf));
+	numchars = get_line(client, buf, sizeof(buf));//拿到buf中的htpp报文
 
 	i = 0;
 	j = 0;
@@ -94,7 +94,7 @@ void *accept_request(void *from_client)
 		}
 	}
 
-	sprintf(path, "httpdocs%s", url);//将
+	sprintf(path, "httpdocs%s", url);// Write formatted data to string
 
 	if (path[strlen(path) - 1] == '/')
 	{
@@ -107,12 +107,10 @@ void *accept_request(void *from_client)
 	{
 		while ((numchars > 0) && strcmp("\n", buf))
 			numchars = get_line(client, buf, sizeof(buf));
-
 		not_found(client);
 	}
 	else
 	{
-
 		if ((st.st_mode & S_IFMT) == S_IFDIR) // S_IFDIR代表目录
 		//如果请求参数为目录, 自动打开test.html
 		{
@@ -140,6 +138,7 @@ void *accept_request(void *from_client)
 	return NULL;
 }
 
+// 请求失败了，返回400状态，并且发送相关的信息
 void bad_request(int client)
 {
 	char buf[1024];
@@ -169,6 +168,7 @@ void cat(int client, FILE *resource)
 	}
 }
 
+//无法执行返回500状态
 void cannot_execute(int client)
 {
 	char buf[1024];
@@ -183,13 +183,14 @@ void cannot_execute(int client)
 	send(client, buf, strlen(buf), 0);
 }
 
+// 发生错误，输出错误信息
 void error_die(const char *sc)
 {
 	perror(sc);
 	exit(1);
 }
 
-//执行cgi动态解析
+//执行cgi动态解析，不知道是干嘛的
 void execute_cgi(int client, const char *path,
 				 const char *method, const char *query_string)
 {
@@ -314,7 +315,7 @@ void execute_cgi(int client, const char *path,
 	}
 }
 
-//解析一行http报文
+//解析一行http报文，解析的意思：利用recv函数将接受的报文存入buf中
 int get_line(int sock, char *buf, int size)
 {
 	int i = 0;
@@ -323,29 +324,28 @@ int get_line(int sock, char *buf, int size)
 
 	while ((i < size - 1) && (c != '\n'))
 	{
-		n = recv(sock, &c, 1, 0);
-
+		n = recv(sock, &c, 1, 0);// 接受一个报文，
 		if (n > 0)
 		{
 			if (c == '\r')
 			{
-
 				n = recv(sock, &c, 1, MSG_PEEK);
 				if ((n > 0) && (c == '\n'))
 					recv(sock, &c, 1, 0);
 				else
 					c = '\n';
 			}
-			buf[i] = c;
+			buf[i] = c;//存入buf中
 			i++;
 		}
 		else
 			c = '\n';
 	}
-	buf[i] = '\0';
+	buf[i] = '\0';//字符串的结尾
 	return (i);
 }
 
+// http请求的报头
 void headers(int client, const char *filename)
 {
 
