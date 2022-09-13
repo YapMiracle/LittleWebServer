@@ -33,8 +33,11 @@ void unimplemented(int);
 void *accept_request(void *from_client)
 {
 	int client = *(int *)from_client;
+	//作为get_line的参数存储报文
 	char buf[1024];
+	//http报文的长度
 	int numchars;
+	// 
 	char method[255];
 	char url[255];
 	char path[512];
@@ -43,7 +46,7 @@ void *accept_request(void *from_client)
 	int cgi = 0;
 	char *query_string = NULL;
 
-	numchars = get_line(client, buf, sizeof(buf));//拿到buf中的htpp报文
+	numchars = get_line(client, buf, sizeof(buf));//拿到buf中的http报文
 
 	i = 0;
 	j = 0;
@@ -78,7 +81,7 @@ void *accept_request(void *from_client)
 	url[i] = '\0';
 
 	// GET请求url可能会带有?,有查询参数
-	if (strcasecmp(method, "GET") == 0)
+	if (strcasecmp(method, "GET") == 0)//比较，相同则返回0
 	{
 
 		query_string = url;
@@ -315,7 +318,8 @@ void execute_cgi(int client, const char *path,
 	}
 }
 
-//解析一行http报文，解析的意思：利用recv函数将接受的报文存入buf中
+//解析一行http报文（URL），解析的意思：利用recv函数将接受的报文存入buf中，返回值是长度
+//sock参数是用来接受客户端发送的报文，buf用来保存报文，size是报文的长度
 int get_line(int sock, char *buf, int size)
 {
 	int i = 0;
@@ -447,6 +451,7 @@ int startup(u_short *port)
 	return (httpd);
 }
 
+// 发送错误信息的http的消息，状态码是501
 void unimplemented(int client)
 {
 	char buf[1024];
