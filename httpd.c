@@ -30,6 +30,7 @@ int startup(u_short *);
 void unimplemented(int);
 
 //  处理监听到的 HTTP 请求，处理http报文buf：提取请求参数以及是否含有查询参数，没有理解的是cgi动态解析和stat的作用。
+// 只处理了第一行：请求方式+url+HTTP版本号
 void *accept_request(void *from_client)
 {
 	int client = *(int *)from_client;
@@ -130,7 +131,6 @@ void *accept_request(void *from_client)
 			cgi = 1;
 
 		if (!cgi)
-
 			serve_file(client, path);
 		else
 			execute_cgi(client, path, method, query_string);
@@ -318,8 +318,8 @@ void execute_cgi(int client, const char *path,
 	}
 }
 
-//解析一行http报文（URL），解析的意思：利用recv函数将接受的报文存入buf中，返回值是长度
-//sock参数是用来接受客户端发送的报文，buf用来保存报文，size是报文的长度
+// 解析一行http报文（URL），解析的意思：利用recv函数将接受的报文存入buf中，返回值是长度
+// sock参数是用来接受客户端发送的报文，buf用来保存报文，size是报文的长度
 int get_line(int sock, char *buf, int size)
 {
 	int i = 0;
@@ -328,12 +328,12 @@ int get_line(int sock, char *buf, int size)
 
 	while ((i < size - 1) && (c != '\n'))
 	{
-		n = recv(sock, &c, 1, 0);// 接受一个报文，
+		n = recv(sock, &c, 1, 0);// 接受一个字符
 		if (n > 0)
 		{
 			if (c == '\r')
 			{
-				n = recv(sock, &c, 1, MSG_PEEK);
+				n = recv(sock, &c, 1, MSG_PEEK);//MSG_PEEK参数：https://blog.csdn.net/G1036583997/article/details/49202405
 				if ((n > 0) && (c == '\n'))
 					recv(sock, &c, 1, 0);
 				else
