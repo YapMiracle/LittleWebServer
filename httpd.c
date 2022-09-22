@@ -16,22 +16,22 @@
 
 #define SERVER_STRING "Server: SongHao's http/0.1.0\r\n" //定义个人server名称
 
-void *accept_request(void *client);
-void bad_request(int);
-void cat(int, FILE *);
-void cannot_execute(int);
-void error_die(const char *);
-void execute_cgi(int, const char *, const char *, const char *);
-int get_line(int, char *, int);
-void headers(int, const char *);
-void not_found(int);
-void serve_file(int, const char *);
-int startup(u_short *);
-void unimplemented(int);
+void accept_request(int);//处理从套接字上监听到的一个 HTTP 请求
+void bad_request(int);//返回给客户端这是个错误请求，400响应码
+void cat(int, FILE *);//读取服务器上某个文件写到 socket 套接字
+void cannot_execute(int);//处理发生在执行 cgi 程序时出现的错误
+void error_die(const char *);//把错误信息写到 perror 
+void execute_cgi(int, const char *, const char *, const char *);//运行cgi脚本，这个非常重要，涉及动态解析
+int get_line(int, char *, int);//读取一行HTTP报文
+void headers(int, const char *);//返回HTTP响应头
+void not_found(int);//返回找不到请求文件
+void serve_file(int, const char *);//调用 cat 把服务器文件内容返回给浏览器。
+int startup(u_short *);//开启http服务，包括绑定端口，监听，开启线程处理链接
+void unimplemented(int);//返回给浏览器表明收到的 HTTP 请求所用的 method 不被支持。
 
 //  处理监听到的 HTTP 请求，处理http报文buf：提取请求参数以及是否含有查询参数，没有理解的是cgi动态解析和stat的作用。
 // 只处理了第一行：请求方式+url+HTTP版本号
-void *accept_request(void *from_client)
+void accept_request(void *from_client)
 {
 	int client = *(int *)from_client;
 	//作为get_line的参数存储报文
