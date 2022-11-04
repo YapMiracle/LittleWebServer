@@ -1,7 +1,7 @@
-all: myhttp
+all: http
 
-myhttp: httpd.c
-	gcc -W -Wall -o myhttp httpd.c -lpthread
+http: httpd.c
+	gcc -W -Wall -o http httpd.c -lpthread
 
 clean:
-	rm myhttp
+	rm http

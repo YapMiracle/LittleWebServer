@@ -16,7 +16,7 @@
 
 #define SERVER_STRING "Server: SongHao's http/0.1.0\r\n" //定义个人server名称
 
-void accept_request(int);//处理从套接字上监听到的一个 HTTP 请求
+void* accept_request(void*);//处理从套接字上监听到的一个 HTTP 请求
 void bad_request(int);//返回给客户端这是个错误请求，400响应码
 void cat(int, FILE *);//读取服务器上某个文件写到 socket 套接字
 void cannot_execute(int);//处理发生在执行 cgi 程序时出现的错误
@@ -31,7 +31,7 @@ void unimplemented(int);//返回给浏览器表明收到的 HTTP 请求所用的
 
 //  处理监听到的 HTTP 请求，处理http报文buf：提取请求参数以及是否含有查询参数，没有理解的是cgi动态解析和stat的作用。
 // 只处理了第一行：请求方式+url+HTTP版本号
-void accept_request(void *from_client)
+void* accept_request(void *from_client)
 {
 	int client = *(int *)from_client;
 	//作为get_line的参数存储报文
@@ -479,7 +479,7 @@ void unimplemented(int client)
 int main(void)
 {
 	int server_sock = -1;
-	u_short port = 6379; //默认监听端口号 port 为6379
+	u_short port = 6380; //默认监听端口号 port 为6379
 	int client_sock = -1;
 	struct sockaddr_in client_name;
 	socklen_t client_name_len = sizeof(client_name);
