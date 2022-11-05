@@ -14,7 +14,7 @@
 
 #define ISspace(x) isspace((int)(x)) // isspace()方法是检测该字符是否是空字符串，包括'\n', '\t'， ' '等
 
-#define SERVER_STRING "Server: SongHao's http/0.1.0\r\n" //定义个人server名称
+#define SERVER_STRING "Server: Hzy's http/0.1.0\r\n" //定义个人server名称
 
 void *accept_request(void *);									 //处理从套接字上监听到的一个 HTTP 请求
 void bad_request(int);											 //返回给客户端这是个错误请求，400响应码
