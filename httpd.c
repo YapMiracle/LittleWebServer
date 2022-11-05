@@ -16,29 +16,29 @@
 
 #define SERVER_STRING "Server: SongHao's http/0.1.0\r\n" //定义个人server名称
 
-void* accept_request(void*);//处理从套接字上监听到的一个 HTTP 请求
-void bad_request(int);//返回给客户端这是个错误请求，400响应码
-void cat(int, FILE *);//读取服务器上某个文件写到 socket 套接字
-void cannot_execute(int);//处理发生在执行 cgi 程序时出现的错误
-void error_die(const char *);//把错误信息写到 perror 
-void execute_cgi(int, const char *, const char *, const char *);//运行cgi脚本，这个非常重要，涉及动态解析
-int get_line(int, char *, int);//读取一行HTTP报文
-void headers(int, const char *);//返回HTTP响应头
-void not_found(int);//返回找不到请求文件
-void serve_file(int, const char *);//调用 cat 把服务器文件内容返回给浏览器。
-int startup(u_short *);//开启http服务，包括绑定端口，监听，开启线程处理链接
-void unimplemented(int);//返回给浏览器表明收到的 HTTP 请求所用的 method 不被支持。
+void *accept_request(void *);									 //处理从套接字上监听到的一个 HTTP 请求
+void bad_request(int);											 //返回给客户端这是个错误请求，400响应码
+void cat(int, FILE *);											 //读取服务器上某个文件写到 socket 套接字
+void cannot_execute(int);										 //处理发生在执行 cgi 程序时出现的错误
+void error_die(const char *);									 //把错误信息写到 perror
+void execute_cgi(int, const char *, const char *, const char *); //运行cgi脚本，这个非常重要，涉及动态解析
+int get_line(int, char *, int);									 //读取一行HTTP报文
+void headers(int, const char *);								 //返回HTTP响应头
+void not_found(int);											 //返回找不到请求文件
+void serve_file(int, const char *);								 //调用 cat 把服务器文件内容返回给浏览器。
+int startup(u_short *);											 //开启http服务，包括绑定端口，监听，开启线程处理链接
+void unimplemented(int);										 //返回给浏览器表明收到的 HTTP 请求所用的 method 不被支持。
 
 //  处理监听到的 HTTP 请求，处理http报文buf：提取请求参数以及是否含有查询参数，没有理解的是cgi动态解析和stat的作用。
 // 只处理了第一行：请求方式+url+HTTP版本号
-void* accept_request(void *from_client)
+void *accept_request(void *from_client)
 {
-	int client = *(int *)from_client;
+	int client = *(int *)from_client; // from void* transfrom to int* and *(int*)
 	//作为get_line的参数存储报文
 	char buf[1024];
-	//http报文的长度
+	// http报文的长度
 	int numchars;
-	// 
+	//
 	char method[255];
 	char url[255];
 	char path[512];
@@ -47,18 +47,18 @@ void* accept_request(void *from_client)
 	int cgi = 0;
 	char *query_string = NULL;
 
-	numchars = get_line(client, buf, sizeof(buf));//拿到buf中的http报文
+	numchars = get_line(client, buf, sizeof(buf)); //拿到buf中的http报文
 
 	i = 0;
-	j = 0;
-	while (!ISspace(buf[j]) && (i < sizeof(method) - 1))
+	j = 0;// this number always ++, and j<sizeof(buf)
+	while (!ISspace(buf[j]) && (i < sizeof(method) - 1))// i++,j++ util buf[j]==' '
 	{
 		//提取其中的请求方式，看看是get还是post
 		method[i] = buf[j];
 		i++;
 		j++;
 	}
-	method[i] = '\0';
+	method[i] = '\0';// The end of a C string
 
 	if (strcasecmp(method, "GET") && strcasecmp(method, "POST")) // strcasecmp函数的作用是字符串的比较，但是不区分大小写。
 	{
@@ -67,12 +67,16 @@ void* accept_request(void *from_client)
 	}
 
 	if (strcasecmp(method, "POST") == 0)
-		cgi = 1;
+		cgi = 1;// conduct the cgi analysis
 
 	i = 0;
+
+	// http报文的格式https://blog.csdn.net/dangzhangjing97/article/details/80957898
+	// 跳过 get/post 后面的那个空格
 	while (ISspace(buf[j]) && (j < sizeof(buf)))
 		j++;
 
+	// get the url in the first line of http报文.
 	while (!ISspace(buf[j]) && (i < sizeof(url) - 1) && (j < sizeof(buf)))
 	{
 		url[i] = buf[j];
@@ -82,10 +86,11 @@ void* accept_request(void *from_client)
 	url[i] = '\0';
 
 	// GET请求url可能会带有?,有查询参数
-	if (strcasecmp(method, "GET") == 0)//比较，相同则返回0
+	if (strcasecmp(method, "GET") == 0) //比较，相同则返回0
 	{
 
 		query_string = url;
+		// 分析url中是否有?，决定是否开启cgi
 		while ((*query_string != '?') && (*query_string != '\0'))
 			query_string++;
 
@@ -98,7 +103,7 @@ void* accept_request(void *from_client)
 		}
 	}
 
-	sprintf(path, "httpdocs%s", url);// Write formatted data to string
+	sprintf(path, "httpdocs%s", url); // Write formatted data to string
 
 	if (path[strlen(path) - 1] == '/')
 	{
@@ -107,7 +112,8 @@ void* accept_request(void *from_client)
 
 	//注意st是struct stat类型
 	// https://www.cnblogs.com/matthew-2013/p/4679425.html，详细解释
-	if (stat(path, &st) == -1)// stat函数是得到文件的信息，存储在st里面，int stat(const char *file_name, struct stat *buf);
+	// 这里才把所有的http报文解析完
+	if (stat(path, &st) == -1) // stat函数是得到文件的信息，存储在st里面，int stat(const char *file_name, struct stat *buf);
 	{
 		while ((numchars > 0) && strcmp("\n", buf))
 			numchars = get_line(client, buf, sizeof(buf));
@@ -279,7 +285,7 @@ void execute_cgi(int client, const char *path,
 			putenv(query_env);
 		}
 		else
-		{	/* POST */
+		{ /* POST */
 			//存储CONTENT_LENGTH
 			sprintf(length_env, "CONTENT_LENGTH=%d", content_length);
 			putenv(length_env);
@@ -328,24 +334,24 @@ int get_line(int sock, char *buf, int size)
 
 	while ((i < size - 1) && (c != '\n'))
 	{
-		n = recv(sock, &c, 1, 0);// 接受一个字符
+		n = recv(sock, &c, 1, 0); // 接受一个字符 recv(sockfd, buf, len, flags);
 		if (n > 0)
 		{
 			if (c == '\r')
 			{
-				n = recv(sock, &c, 1, MSG_PEEK);//MSG_PEEK参数：https://blog.csdn.net/G1036583997/article/details/49202405
+				n = recv(sock, &c, 1, MSG_PEEK); // MSG_PEEK参数：https://blog.csdn.net/G1036583997/article/details/49202405
 				if ((n > 0) && (c == '\n'))
-					recv(sock, &c, 1, 0);
+					recv(sock, &c, 1, 0); // step two chars, '\r\n'
 				else
 					c = '\n';
 			}
-			buf[i] = c;//存入buf中
+			buf[i] = c; //存入buf中, Once a character
 			i++;
 		}
 		else
 			c = '\n';
 	}
-	buf[i] = '\0';//字符串的结尾
+	buf[i] = '\0'; //字符串的结尾
 	return (i);
 }
 
@@ -356,7 +362,7 @@ void headers(int client, const char *filename)
 	char buf[1024];
 
 	(void)filename; /* could use filename to determine file type */
-					//发送HTTP头
+	//发送HTTP头
 	strcpy(buf, "HTTP/1.0 200 OK\r\n");
 	send(client, buf, strlen(buf), 0);
 	strcpy(buf, SERVER_STRING);
@@ -367,7 +373,7 @@ void headers(int client, const char *filename)
 	send(client, buf, strlen(buf), 0);
 }
 
-//返回404错误页面，组装信息
+/* 返回404错误页面，组装信息 */
 void not_found(int client)
 {
 	char buf[1024];
@@ -416,7 +422,7 @@ void serve_file(int client, const char *filename)
 	fclose(resource); //关闭文件句柄
 }
 
-//启动服务端
+//启动服务端 bind and listen
 int startup(u_short *port)
 {
 	int httpd = 0, option;
@@ -434,16 +440,19 @@ int startup(u_short *port)
 	memset(&name, 0, sizeof(name));
 	name.sin_family = AF_INET;
 	name.sin_port = htons(*port);
-	name.sin_addr.s_addr = htonl(INADDR_ANY);
+	name.sin_addr.s_addr = htonl(INADDR_ANY); // set sockaddr_in
 
 	if (bind(httpd, (struct sockaddr *)&name, sizeof(name)) < 0)
 		error_die("bind"); //绑定失败
-	if (*port == 0)		   /*动态分配一个端口 */
+
+	//如果在bind时指定端口号位0，那么内核就在bind被调用时选择一个临时端口。0-65535
+	if (*port == 0) /*动态分配一个端口, */
 	{
 		socklen_t namelen = sizeof(name);
-		if (getsockname(httpd, (struct sockaddr *)&name, &namelen) == -1)
+		if (getsockname(httpd, (struct sockaddr *)&name, &namelen) == -1) // get port after bind
 			error_die("getsockname");
 		*port = ntohs(name.sin_port);
+		printf("%d\n", *port); // set the current port.
 	}
 
 	if (listen(httpd, 5) < 0)
@@ -452,6 +461,7 @@ int startup(u_short *port)
 }
 
 // 发送错误信息的http的消息，状态码是501
+// unimplemented 未实施的
 void unimplemented(int client)
 {
 	char buf[1024];
@@ -479,7 +489,7 @@ void unimplemented(int client)
 int main(void)
 {
 	int server_sock = -1;
-	u_short port = 6380; //默认监听端口号 port 为6379
+	u_short port = 6380; //默认监听端口号 port 为6380
 	int client_sock = -1;
 	struct sockaddr_in client_name;
 	socklen_t client_name_len = sizeof(client_name);
@@ -488,7 +498,7 @@ int main(void)
 
 	printf("http server_sock is %d\n", server_sock);
 	printf("http running on port %d\n", port);
-	while (1)
+	while (1)//continuing accept
 	{
 
 		client_sock = accept(server_sock,
@@ -499,7 +509,7 @@ int main(void)
 		if (client_sock == -1)
 			error_die("accept");
 
-		if (pthread_create(&newthread, NULL, accept_request, (void *)&client_sock) != 0)
+		if (pthread_create(&newthread, NULL, accept_request, (void *)&client_sock) != 0)// create a thread
 			perror("pthread_create");
 	}
 	close(server_sock);
